@@ -145,7 +145,7 @@ func BenchmarkQuerierSelect(b *testing.B) {
 
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					var ss SeriesSet
+					var ss storage.SeriesSet
 					if sorted {
 						ss, err = q.SelectSorted(matcher)
 					} else {

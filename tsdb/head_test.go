@@ -542,7 +542,7 @@ func TestHeadDeleteSimple(t *testing.T) {
 				testutil.Ok(t, reloadedHead.Init(0))
 
 				// Compare the query results for both heads - before and after the reload.
-				expSeriesSet := newMockSeriesSet([]Series{
+				expSeriesSet := newMockSeriesSet([]storage.Series{
 					newSeries(map[string]string{lblDefault.Name: lblDefault.Value}, func() []tsdbutil.Sample {
 						ss := make([]tsdbutil.Sample, 0, len(c.smplsExp))
 						for _, s := range c.smplsExp {
@@ -793,13 +793,13 @@ func TestDelete_e2e(t *testing.T) {
 			ss, err := q.SelectSorted(del.ms...)
 			testutil.Ok(t, err)
 			// Build the mockSeriesSet.
-			matchedSeries := make([]Series, 0, len(matched))
+			matchedSeries := make([]storage.Series, 0, len(matched))
 			for _, m := range matched {
 				smpls := seriesMap[m.String()]
 				smpls = deletedSamples(smpls, del.drange)
 				// Only append those series for which samples exist as mockSeriesSet
 				// doesn't skip series with no samples.
-				// TODO: But sometimes SeriesSet returns an empty SeriesIterator
+				// TODO: But sometimes SeriesSet returns an empty chunkenc.Iterator
 				if len(smpls) > 0 {
 					matchedSeries = append(matchedSeries, newSeries(
 						m.Map(),

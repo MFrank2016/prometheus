@@ -18,6 +18,8 @@ import (
 	"errors"
 
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"github.com/prometheus/prometheus/tsdb/chunks"
 )
 
 // The errors exposed.
@@ -49,23 +51,26 @@ type Queryable interface {
 	Querier(ctx context.Context, mint, maxt int64) (Querier, error)
 }
 
-// Querier provides reading access to time series data.
+// Querier provides querying access over time series data of a fixed
+// time range.
 type Querier interface {
 	// Select returns a set of series that matches the given label matchers.
-	Select(*SelectParams, ...*labels.Matcher) (SeriesSet, Warnings, error)
+	Select(...*labels.Matcher) (SeriesSet, error)
 
-	// SelectSorted returns a sorted set of series that matches the given label matchers.
-	SelectSorted(*SelectParams, ...*labels.Matcher) (SeriesSet, Warnings, error)
+	// SelectSorted returns a sorted set of series that matches the given label matcher.
+	SelectSorted(...*labels.Matcher) (SeriesSet, error)
 
 	// LabelValues returns all potential values for a label name.
-	LabelValues(name string) ([]string, Warnings, error)
+	// It is not safe to use the strings beyond the lifefime of the querier.
+	LabelValues(string) ([]string, error)
 
 	// LabelNames returns all the unique label names present in the block in sorted order.
-	LabelNames() ([]string, Warnings, error)
+	LabelNames() ([]string, error)
 
 	// Close releases the resources of the Querier.
 	Close() error
 }
+
 
 // SelectParams specifies parameters passed to data selections.
 type SelectParams struct {
@@ -108,13 +113,43 @@ type SeriesSet interface {
 	Err() error
 }
 
-// Series represents a single time series.
+// ChunkSeriesSet exposes the chunks and intervals of a series instead of the
+// actual series itself.
+type ChunkSeriesSet interface {
+	Next() bool
+	At() ChunkSeries
+	Err() error
+}
+
+// Series exposes a single time series and allows to iterate over samples as well chunks.
 type Series interface {
 	// Labels returns the complete set of labels identifying the series.
 	Labels() labels.Labels
 
 	// Iterator returns a new iterator of the data of the series.
-	Iterator() SeriesIterator
+	Iterator() chunkenc.Iterator
+}
+
+// Series exposes a single time series and allows to iterate over samples as well chunks.
+type ChunkSeries interface {
+	// Labels returns the complete set of labels identifying the series.
+	Labels() labels.Labels
+
+	// ChunkIterator returns a new iterator that iterates over non-overlapping chunks of the series.
+	Iterator() ChunkIterator
+}
+
+// ChunkIterator iterates over the chunk of a time series.
+type ChunkIterator interface {
+	//// Seek advances the iterator forward to the given timestamp.
+	//// It advances to the chunk with min time at t or first chunk with min time after t.
+	//Seek(t int64) bool
+	// At returns the current meta.
+	At() chunks.Meta
+	// Next advances the iterator by one.
+	Next() bool
+	// Err returns optional error if Next is false.
+	Err() error
 }
 
 // SeriesIterator iterates over the data of a time series.

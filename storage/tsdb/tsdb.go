@@ -239,7 +239,7 @@ func (a adapter) Close() error {
 }
 
 type querier struct {
-	q tsdb.Querier
+	q storage.Querier
 }
 
 func (q querier) Select(_ *storage.SelectParams, ms ...*labels.Matcher) (storage.SeriesSet, storage.Warnings, error) {
@@ -269,7 +269,7 @@ func (q querier) LabelNames() ([]string, storage.Warnings, error) {
 func (q querier) Close() error { return q.q.Close() }
 
 type seriesSet struct {
-	set tsdb.SeriesSet
+	set storage.SeriesSet
 }
 
 func (s seriesSet) Next() bool         { return s.set.Next() }
@@ -277,7 +277,7 @@ func (s seriesSet) Err() error         { return s.set.Err() }
 func (s seriesSet) At() storage.Series { return series{s: s.set.At()} }
 
 type series struct {
-	s tsdb.Series
+	s storage.Series
 }
 
 func (s series) Labels() labels.Labels            { return s.s.Labels() }
